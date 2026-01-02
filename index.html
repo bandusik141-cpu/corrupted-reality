@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Corrupted Reality — Room Textured</title>
+  <title>Corrupted Reality — Atmospheric Room</title>
 
   <style>
     body { margin: 0; overflow: hidden; background: black; }
@@ -40,16 +40,24 @@
       border-radius: 50%;
       background: rgba(255,255,255,0.5);
     }
+
+    /* Атмосферное освещение по краям */
+    #vignette {
+      position: fixed;
+      top:0; left:0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(50,25,0,0.8) 100%);
+      z-index: 20;
+    }
   </style>
 </head>
 
 <body>
 
 <div id="hint">WASD / ⬅️➡️ — ходьба | Мышь / палец — осмотр</div>
-
-<div id="joystick">
-  <div id="stick"></div>
-</div>
+<div id="joystick"><div id="stick"></div></div>
+<div id="vignette"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 
@@ -70,7 +78,7 @@
   // ===== СВЕТ =====
   scene.add(new THREE.AmbientLight(0xffffff,1));
 
-  // ===== ЗАГРУЗКА ТЕКСТУР =====
+  // ===== ТЕКСТУРЫ =====
   const loader = new THREE.TextureLoader();
 
   const floorTexture = loader.load('https://i.postimg.cc/qMrFMmrT/tmpfdd10f506ecf00611c27c317004b7676.jpg');
@@ -85,9 +93,13 @@
   ceilingTexture.wrapS = ceilingTexture.wrapT = THREE.RepeatWrapping;
   ceilingTexture.repeat.set(2,2);
 
+  // ===== ПАРАМЕТРЫ КОМНАТЫ =====
+  const roomSize = 10; // ширина/длина
+  const roomHeight = 3; // высота
+
   // ===== ПОЛ =====
   const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(20,20),
+    new THREE.PlaneGeometry(roomSize, roomSize),
     new THREE.MeshStandardMaterial({ map: floorTexture })
   );
   floor.rotation.x = -Math.PI/2;
@@ -95,37 +107,33 @@
 
   // ===== ПОТОЛОК =====
   const ceiling = new THREE.Mesh(
-    new THREE.PlaneGeometry(20,20),
+    new THREE.PlaneGeometry(roomSize, roomSize),
     new THREE.MeshStandardMaterial({ map: ceilingTexture })
   );
-  ceiling.position.y = 3;
+  ceiling.position.y = roomHeight;
   ceiling.rotation.x = Math.PI/2;
   scene.add(ceiling);
 
   // ===== СТЕНЫ =====
   const wallMaterial = new THREE.MeshStandardMaterial({ map: wallTexture });
 
-  // ЗАДНЯЯ СТЕНА
-  const wallBack = new THREE.Mesh(new THREE.PlaneGeometry(20,3), wallMaterial);
-  wallBack.position.set(0,1.5,-10);
+  const wallBack = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
+  wallBack.position.set(0, roomHeight/2, -roomSize/2);
   wallBack.rotation.y = 0;
   scene.add(wallBack);
 
-  // ПЕРЕДНЯЯ СТЕНА
-  const wallFront = new THREE.Mesh(new THREE.PlaneGeometry(20,3), wallMaterial);
-  wallFront.position.set(0,1.5,10);
+  const wallFront = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
+  wallFront.position.set(0, roomHeight/2, roomSize/2);
   wallFront.rotation.y = Math.PI;
   scene.add(wallFront);
 
-  // ЛЕВАЯ СТЕНА
-  const wallLeft = new THREE.Mesh(new THREE.PlaneGeometry(20,3), wallMaterial);
-  wallLeft.position.set(-10,1.5,0);
+  const wallLeft = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
+  wallLeft.position.set(-roomSize/2, roomHeight/2, 0);
   wallLeft.rotation.y = Math.PI/2;
   scene.add(wallLeft);
 
-  // ПРАВАЯ СТЕНА
-  const wallRight = new THREE.Mesh(new THREE.PlaneGeometry(20,3), wallMaterial);
-  wallRight.position.set(10,1.5,0);
+  const wallRight = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
+  wallRight.position.set(roomSize/2, roomHeight/2, 0);
   wallRight.rotation.y = -Math.PI/2;
   scene.add(wallRight);
 
@@ -134,15 +142,16 @@
     new THREE.BoxGeometry(1,1,1),
     new THREE.MeshStandardMaterial({ color:0xaa0000 })
   );
-  box.position.set(0,0.5,-5);
+  box.position.set(0,0.5,-3);
   scene.add(box);
 
   // ===== ОСМОТР =====
-  let yaw=0, looking=false, lastX=0;
+  let yaw=0, looking=false;
 
   function lookStart(x){ looking=true; lastX=x; }
   function lookMove(x){ if(!looking) return; yaw -= (x-lastX)*0.005; lastX=x; camera.rotation.set(0,yaw,0); }
   function lookEnd(){ looking=false; }
+  let lastX=0;
 
   document.addEventListener('mousedown', e=>lookStart(e.clientX));
   document.addEventListener('mousemove', e=>lookMove(e.clientX));
@@ -193,7 +202,7 @@
     dx = Math.cos(angle)*dist; dy = Math.sin(angle)*dist;
 
     stick.style.left = (center.x+dx-20)+'px';
-    stick.style.top = (center.y+dy-20)+'px';
+    stick.style.top  = (center.y+dy-20)+'px';
 
     move.side = dx/maxDist;
     move.forward = -dy/maxDist;
