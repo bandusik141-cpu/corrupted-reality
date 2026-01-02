@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Corrupted Reality — Walk Test</title>
+  <title>Corrupted Reality — Movement</title>
 
   <style>
     body { margin: 0; overflow: hidden; background: black; }
@@ -18,48 +18,51 @@
       font-family: monospace;
       opacity: 0.6;
       z-index: 5;
+      pointer-events: none;
     }
 
-    /* Кнопки для телефона */
-    #mobile-controls {
+    /* ===== ДЖОЙСТИК ===== */
+    #joystick {
       position: fixed;
-      bottom: 50px;
-      width: 100%;
-      text-align: center;
+      left: 20px;
+      bottom: 20px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
       z-index: 10;
+      touch-action: none;
     }
 
-    button {
-      font-size: 20px;
-      padding: 14px 22px;
-      margin: 5px;
-      opacity: 0.6;
+    #stick {
+      position: absolute;
+      left: 40px;
+      top: 40px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.6);
     }
   </style>
 </head>
 
 <body>
 
-<div id="hint">W / S — ходьба | Мышь / палец — осмотр</div>
+<div id="hint">WASD / ⬅️➡️ — ходьба | Мышь / палец — осмотр</div>
 
-<div id="mobile-controls">
-  <button
-    ontouchstart="moveForward = true"
-    ontouchend="moveForward = false">▲</button>
-
-  <button
-    ontouchstart="moveBackward = true"
-    ontouchend="moveBackward = false">▼</button>
+<!-- ДЖОЙСТИК (ТОЛЬКО ДЛЯ ТЕЛЕФОНА, но не мешает ПК) -->
+<div id="joystick">
+  <div id="stick"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 
 <script>
-  // ===== СЦЕНА =====
+  /* ========= СЦЕНА ========= */
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x111111);
 
-  // ===== КАМЕРА =====
+  /* ========= КАМЕРА ========= */
   const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
@@ -68,23 +71,23 @@
   );
   camera.position.set(0, 1.6, 3);
 
-  // ===== РЕНДЕР =====
+  /* ========= РЕНДЕР ========= */
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // ===== СВЕТ =====
+  /* ========= СВЕТ ========= */
   scene.add(new THREE.AmbientLight(0xffffff, 1));
 
-  // ===== ПОЛ =====
+  /* ========= ПОЛ ========= */
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(20, 20),
-    new THREE.MeshStandardMaterial({ color: 0x00aa00 })
+    new THREE.MeshStandardMaterial({ color: 0x2a2a2a })
   );
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
 
-  // ===== КУБ (ориентир) =====
+  /* ========= ОРИЕНТИР ========= */
   const box = new THREE.Mesh(
     new THREE.BoxGeometry(1, 1, 1),
     new THREE.MeshStandardMaterial({ color: 0xaa0000 })
@@ -92,78 +95,117 @@
   box.position.set(0, 1, -5);
   scene.add(box);
 
-  // ===== ОСМОТР (ТОЛЬКО ВЛЕВО / ВПРАВО) =====
+  /* ========= ОСМОТР (ТОЛЬКО ВЛЕВО / ВПРАВО) ========= */
   let yaw = 0;
-  let isTouching = false;
+  let looking = false;
   let lastX = 0;
 
-  function startLook(x) {
-    isTouching = true;
+  function lookStart(x) {
+    looking = true;
     lastX = x;
   }
-
-  function moveLook(x) {
-    if (!isTouching) return;
+  function lookMove(x) {
+    if (!looking) return;
     yaw -= (x - lastX) * 0.005;
     lastX = x;
     camera.rotation.set(0, yaw, 0);
   }
-
-  function endLook() {
-    isTouching = false;
+  function lookEnd() {
+    looking = false;
   }
 
-  // Мышь
-  document.addEventListener('mousedown', e => startLook(e.clientX));
-  document.addEventListener('mousemove', e => moveLook(e.clientX));
-  document.addEventListener('mouseup', endLook);
+  document.addEventListener('mousedown', e => lookStart(e.clientX));
+  document.addEventListener('mousemove', e => lookMove(e.clientX));
+  document.addEventListener('mouseup', lookEnd);
 
-  // Тач
-  document.addEventListener('touchstart', e => startLook(e.touches[0].clientX));
-  document.addEventListener('touchmove', e => moveLook(e.touches[0].clientX));
-  document.addEventListener('touchend', endLook);
+  document.addEventListener('touchstart', e => lookStart(e.touches[0].clientX));
+  document.addEventListener('touchmove', e => lookMove(e.touches[0].clientX));
+  document.addEventListener('touchend', lookEnd);
 
-  // ===== ХОДЬБА =====
-  let moveForward = false;
-  let moveBackward = false;
+  /* ========= ДВИЖЕНИЕ (ПК) ========= */
+  let move = {
+    forward: 0,
+    side: 0
+  };
 
-  const walkSpeed = 0.06; // ← нормальная скорость (потом снизим)
-
-  // Клавиатура (ПК)
   document.addEventListener('keydown', e => {
-    if (e.key === 'w' || e.key === 'W') moveForward = true;
-    if (e.key === 's' || e.key === 'S') moveBackward = true;
+    if (e.key === 'w' || e.key === 'W') move.forward = 1;
+    if (e.key === 's' || e.key === 'S') move.forward = -1;
+    if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') move.side = -1;
+    if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') move.side = 1;
   });
 
   document.addEventListener('keyup', e => {
-    if (e.key === 'w' || e.key === 'W') moveForward = false;
-    if (e.key === 's' || e.key === 'S') moveBackward = false;
+    if (['w','W','s','S'].includes(e.key)) move.forward = 0;
+    if (['a','A','d','D','ArrowLeft','ArrowRight'].includes(e.key)) move.side = 0;
   });
 
-  // ===== ЦИКЛ =====
+  /* ========= ДЖОЙСТИК (ТЕЛЕФОН) ========= */
+  const joystick = document.getElementById('joystick');
+  const stick = document.getElementById('stick');
+  const center = { x: 60, y: 60 };
+  const maxDist = 40;
+  let joyActive = false;
+
+  joystick.addEventListener('touchstart', e => {
+    joyActive = true;
+  });
+
+  joystick.addEventListener('touchmove', e => {
+    if (!joyActive) return;
+    const rect = joystick.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+
+    let dx = x - center.x;
+    let dy = y - center.y;
+
+    const dist = Math.min(Math.hypot(dx, dy), maxDist);
+    const angle = Math.atan2(dy, dx);
+
+    dx = Math.cos(angle) * dist;
+    dy = Math.sin(angle) * dist;
+
+    stick.style.left = (center.x + dx - 20) + 'px';
+    stick.style.top  = (center.y + dy - 20) + 'px';
+
+    move.side = dx / maxDist;
+    move.forward = -dy / maxDist;
+  });
+
+  joystick.addEventListener('touchend', () => {
+    joyActive = false;
+    move.forward = 0;
+    move.side = 0;
+    stick.style.left = '40px';
+    stick.style.top  = '40px';
+  });
+
+  /* ========= ЦИКЛ ========= */
+  let walkSpeed = 0.06; // нормальная скорость
+
   function animate() {
     requestAnimationFrame(animate);
 
-    // Направление взгляда (вперёд)
-    const direction = new THREE.Vector3(
+    const forward = new THREE.Vector3(
       Math.sin(yaw),
       0,
       Math.cos(yaw)
     );
+    const right = new THREE.Vector3(
+      Math.cos(yaw),
+      0,
+      -Math.sin(yaw)
+    );
 
-    if (moveForward) {
-      camera.position.add(direction.clone().multiplyScalar(-walkSpeed));
-    }
-    if (moveBackward) {
-      camera.position.add(direction.clone().multiplyScalar(walkSpeed));
-    }
+    camera.position.add(forward.multiplyScalar(-move.forward * walkSpeed));
+    camera.position.add(right.multiplyScalar(move.side * walkSpeed));
 
     renderer.render(scene, camera);
   }
 
   animate();
 
-  // ===== РЕСАЙЗ =====
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
