@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Corrupted Reality — Test</title>
+  <title>Corrupted Reality — Walk Test</title>
 
   <style>
     body { margin: 0; overflow: hidden; background: black; }
     canvas { display: block; }
+
     #hint {
       position: fixed;
       bottom: 10px;
@@ -16,21 +17,49 @@
       color: white;
       font-family: monospace;
       opacity: 0.6;
+      z-index: 5;
+    }
+
+    /* Кнопки для телефона */
+    #mobile-controls {
+      position: fixed;
+      bottom: 50px;
+      width: 100%;
+      text-align: center;
+      z-index: 10;
+    }
+
+    button {
+      font-size: 20px;
+      padding: 14px 22px;
+      margin: 5px;
+      opacity: 0.6;
     }
   </style>
 </head>
 
 <body>
-<div id="hint">Проведи пальцем / мышью — осмотр</div>
+
+<div id="hint">W / S — ходьба | Мышь / палец — осмотр</div>
+
+<div id="mobile-controls">
+  <button
+    ontouchstart="moveForward = true"
+    ontouchend="moveForward = false">▲</button>
+
+  <button
+    ontouchstart="moveBackward = true"
+    ontouchend="moveBackward = false">▼</button>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 
 <script>
-  // СЦЕНА
+  // ===== СЦЕНА =====
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x111111);
 
-  // КАМЕРА
+  // ===== КАМЕРА =====
   const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
@@ -39,70 +68,102 @@
   );
   camera.position.set(0, 1.6, 3);
 
-  // РЕНДЕР
+  // ===== РЕНДЕР =====
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // СВЕТ
+  // ===== СВЕТ =====
   scene.add(new THREE.AmbientLight(0xffffff, 1));
 
-  // ПОЛ
+  // ===== ПОЛ =====
   const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(10, 10),
+    new THREE.PlaneGeometry(20, 20),
     new THREE.MeshStandardMaterial({ color: 0x00aa00 })
   );
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
 
-  // КУБ
+  // ===== КУБ (ориентир) =====
   const box = new THREE.Mesh(
     new THREE.BoxGeometry(1, 1, 1),
     new THREE.MeshStandardMaterial({ color: 0xaa0000 })
   );
-  box.position.set(0, 1, -3);
+  box.position.set(0, 1, -5);
   scene.add(box);
 
-  // ОСМОТР ВЛЕВО / ВПРАВО
+  // ===== ОСМОТР (ТОЛЬКО ВЛЕВО / ВПРАВО) =====
   let yaw = 0;
   let isTouching = false;
   let lastX = 0;
 
-  function start(x) {
+  function startLook(x) {
     isTouching = true;
     lastX = x;
   }
 
-  function move(x) {
+  function moveLook(x) {
     if (!isTouching) return;
     yaw -= (x - lastX) * 0.005;
     lastX = x;
     camera.rotation.set(0, yaw, 0);
   }
 
-  function end() {
+  function endLook() {
     isTouching = false;
   }
 
-  // МЫШЬ
-  document.addEventListener('mousedown', e => start(e.clientX));
-  document.addEventListener('mousemove', e => move(e.clientX));
-  document.addEventListener('mouseup', end);
+  // Мышь
+  document.addEventListener('mousedown', e => startLook(e.clientX));
+  document.addEventListener('mousemove', e => moveLook(e.clientX));
+  document.addEventListener('mouseup', endLook);
 
-  // ТАЧ
-  document.addEventListener('touchstart', e => start(e.touches[0].clientX));
-  document.addEventListener('touchmove', e => move(e.touches[0].clientX));
-  document.addEventListener('touchend', end);
+  // Тач
+  document.addEventListener('touchstart', e => startLook(e.touches[0].clientX));
+  document.addEventListener('touchmove', e => moveLook(e.touches[0].clientX));
+  document.addEventListener('touchend', endLook);
 
-  // РЕНДЕР ЦИКЛ
+  // ===== ХОДЬБА =====
+  let moveForward = false;
+  let moveBackward = false;
+
+  const walkSpeed = 0.06; // ← нормальная скорость (потом снизим)
+
+  // Клавиатура (ПК)
+  document.addEventListener('keydown', e => {
+    if (e.key === 'w' || e.key === 'W') moveForward = true;
+    if (e.key === 's' || e.key === 'S') moveBackward = true;
+  });
+
+  document.addEventListener('keyup', e => {
+    if (e.key === 'w' || e.key === 'W') moveForward = false;
+    if (e.key === 's' || e.key === 'S') moveBackward = false;
+  });
+
+  // ===== ЦИКЛ =====
   function animate() {
     requestAnimationFrame(animate);
+
+    // Направление взгляда (вперёд)
+    const direction = new THREE.Vector3(
+      Math.sin(yaw),
+      0,
+      Math.cos(yaw)
+    );
+
+    if (moveForward) {
+      camera.position.add(direction.clone().multiplyScalar(-walkSpeed));
+    }
+    if (moveBackward) {
+      camera.position.add(direction.clone().multiplyScalar(walkSpeed));
+    }
+
     renderer.render(scene, camera);
   }
 
   animate();
 
-  // РЕСАЙЗ
+  // ===== РЕСАЙЗ =====
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
