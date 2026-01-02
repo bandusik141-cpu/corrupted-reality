@@ -9,78 +9,90 @@
     body { margin: 0; overflow: hidden; background: black; }
     canvas { display: block; }
 
-    #hint {
+    /* Главное меню */
+    #menu {
       position: fixed;
-      bottom: 10px;
-      width: 100%;
-      text-align: center;
-      color: white;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
       font-family: monospace;
-      opacity: 0.6;
-      z-index: 5;
-      pointer-events: none;
+      color: white;
+    }
+    #menu h1 { margin-bottom: 30px; }
+    #menu button {
+      font-size: 20px;
+      margin: 10px;
+      padding: 10px 30px;
+      cursor: pointer;
     }
 
-    #joystick {
-      position: fixed;
-      left: 0;
-      bottom: 0;
-      width: 50%;
-      height: 100%;
-      z-index: 10;
-      touch-action: none;
-    }
+    /* Джойстик */
+    #joystick { position: fixed; left: 0; bottom: 0; width: 50%; height: 100%; z-index: 10; touch-action: none; }
+    #stick { position: absolute; left: 50px; top: calc(50% - 20px); width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.5); }
 
-    #stick {
-      position: absolute;
-      left: 50px;
-      top: calc(50% - 20px);
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.5);
-    }
-
-    /* Атмосферное освещение по краям */
+    /* Виньетка по краям */
     #vignette {
-      position: fixed;
-      top:0; left:0;
+      position: fixed; top:0; left:0;
       width: 100%; height: 100%;
       pointer-events: none;
-      background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(50,25,0,0.8) 100%);
+      background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(50,25,0,0.8) 100%);
       z-index: 20;
+    }
+
+    /* Подсказка */
+    #hint {
+      position: fixed; bottom: 10px; width: 100%;
+      text-align: center; color: white; font-family: monospace;
+      opacity: 0.6; z-index: 5; pointer-events: none;
     }
   </style>
 </head>
 
 <body>
 
+<div id="menu">
+  <h1>Corrupted Reality</h1>
+  <button id="playBtn">Play</button>
+  <button id="settingsBtn">Settings</button>
+</div>
+
 <div id="hint">WASD / ⬅️➡️ — ходьба | Мышь / палец — осмотр</div>
 <div id="joystick"><div id="stick"></div></div>
 <div id="vignette"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-
 <script>
+  // ===== ПЕРЕМЕННЫЕ =====
+  let gameStarted = false;
+  const menu = document.getElementById('menu');
+  const playBtn = document.getElementById('playBtn');
+  const settingsBtn = document.getElementById('settingsBtn');
+
+  playBtn.addEventListener('click', () => { menu.style.display='none'; gameStarted=true; });
+  settingsBtn.addEventListener('click', () => { alert("Settings will be available soon!"); });
+
   // ===== СЦЕНА =====
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x111111);
 
-  // ===== КАМЕРА =====
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
   camera.position.set(0,1.6,3);
 
-  // ===== РЕНДЕР =====
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // ===== СВЕТ =====
-  scene.add(new THREE.AmbientLight(0xffffff,1));
+  // ===== ОСВЕЩЕНИЕ =====
+  const ambientLight = new THREE.AmbientLight(0x886644, 0.5); // тусклый коричневый свет
+  scene.add(ambientLight);
 
   // ===== ТЕКСТУРЫ =====
   const loader = new THREE.TextureLoader();
-
   const floorTexture = loader.load('https://i.postimg.cc/qMrFMmrT/tmpfdd10f506ecf00611c27c317004b7676.jpg');
   floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
   floorTexture.repeat.set(2,2);
@@ -94,64 +106,41 @@
   ceilingTexture.repeat.set(2,2);
 
   // ===== ПАРАМЕТРЫ КОМНАТЫ =====
-  const roomSize = 10; // ширина/длина
-  const roomHeight = 3; // высота
+  const roomSize = 10;
+  const roomHeight = 3;
 
-  // ===== ПОЛ =====
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(roomSize, roomSize),
-    new THREE.MeshStandardMaterial({ map: floorTexture })
-  );
-  floor.rotation.x = -Math.PI/2;
-  scene.add(floor);
+  // Пол
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomSize), new THREE.MeshStandardMaterial({ map: floorTexture }));
+  floor.rotation.x = -Math.PI/2; scene.add(floor);
 
-  // ===== ПОТОЛОК =====
-  const ceiling = new THREE.Mesh(
-    new THREE.PlaneGeometry(roomSize, roomSize),
-    new THREE.MeshStandardMaterial({ map: ceilingTexture })
-  );
-  ceiling.position.y = roomHeight;
-  ceiling.rotation.x = Math.PI/2;
-  scene.add(ceiling);
+  // Потолок
+  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomSize), new THREE.MeshStandardMaterial({ map: ceilingTexture }));
+  ceiling.position.y = roomHeight; ceiling.rotation.x = Math.PI/2; scene.add(ceiling);
 
-  // ===== СТЕНЫ =====
+  // Стены
   const wallMaterial = new THREE.MeshStandardMaterial({ map: wallTexture });
 
   const wallBack = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
-  wallBack.position.set(0, roomHeight/2, -roomSize/2);
-  wallBack.rotation.y = 0;
-  scene.add(wallBack);
+  wallBack.position.set(0, roomHeight/2, -roomSize/2); wallBack.rotation.y = 0; scene.add(wallBack);
 
   const wallFront = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
-  wallFront.position.set(0, roomHeight/2, roomSize/2);
-  wallFront.rotation.y = Math.PI;
-  scene.add(wallFront);
+  wallFront.position.set(0, roomHeight/2, roomSize/2); wallFront.rotation.y = Math.PI; scene.add(wallFront);
 
   const wallLeft = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
-  wallLeft.position.set(-roomSize/2, roomHeight/2, 0);
-  wallLeft.rotation.y = Math.PI/2;
-  scene.add(wallLeft);
+  wallLeft.position.set(-roomSize/2, roomHeight/2, 0); wallLeft.rotation.y = Math.PI/2; scene.add(wallLeft);
 
   const wallRight = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
-  wallRight.position.set(roomSize/2, roomHeight/2, 0);
-  wallRight.rotation.y = -Math.PI/2;
-  scene.add(wallRight);
+  wallRight.position.set(roomSize/2, roomHeight/2, 0); wallRight.rotation.y = -Math.PI/2; scene.add(wallRight);
 
-  // ===== ОРИЕНТИР (КУБ) =====
-  const box = new THREE.Mesh(
-    new THREE.BoxGeometry(1,1,1),
-    new THREE.MeshStandardMaterial({ color:0xaa0000 })
-  );
-  box.position.set(0,0.5,-3);
-  scene.add(box);
+  // Куб для ориентира
+  const box = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial({ color:0xaa0000 }));
+  box.position.set(0,0.5,-3); scene.add(box);
 
   // ===== ОСМОТР =====
-  let yaw=0, looking=false;
-
+  let yaw=0, looking=false, lastX=0;
   function lookStart(x){ looking=true; lastX=x; }
   function lookMove(x){ if(!looking) return; yaw -= (x-lastX)*0.005; lastX=x; camera.rotation.set(0,yaw,0); }
   function lookEnd(){ looking=false; }
-  let lastX=0;
 
   document.addEventListener('mousedown', e=>lookStart(e.clientX));
   document.addEventListener('mousemove', e=>lookMove(e.clientX));
@@ -166,27 +155,21 @@
   document.addEventListener('touchend', lookEnd);
 
   // ===== ДВИЖЕНИЕ =====
-  let move={forward:0,side:0};
-  let walkSpeed=0.06;
-
+  let move={forward:0,side:0}; let walkSpeed=0.06;
   document.addEventListener('keydown', e=>{
     if(e.key==='w'||e.key==='W') move.forward=1;
     if(e.key==='s'||e.key==='S') move.forward=-1;
     if(e.key==='a'||e.key==='A'||e.key==='ArrowLeft') move.side=-1;
     if(e.key==='d'||e.key==='D'||e.key==='ArrowRight') move.side=1;
   });
-
   document.addEventListener('keyup', e=>{
     if(['w','W','s','S'].includes(e.key)) move.forward=0;
     if(['a','A','d','D','ArrowLeft','ArrowRight'].includes(e.key)) move.side=0;
   });
 
   // ===== ДЖОЙСТИК =====
-  const joystick = document.getElementById('joystick');
-  const stick = document.getElementById('stick');
-  const center = { x:50, y:window.innerHeight/2 };
-  const maxDist = 40;
-  let joyActive=false;
+  const joystick = document.getElementById('joystick'); const stick = document.getElementById('stick');
+  const center = { x:50, y:window.innerHeight/2 }; const maxDist = 40; let joyActive=false;
 
   joystick.addEventListener('touchstart', ()=>{ joyActive=true; });
   joystick.addEventListener('touchmove', e=>{
@@ -195,8 +178,7 @@
     const x = e.touches[0].clientX - rect.left;
     const y = e.touches[0].clientY - rect.top;
 
-    let dx = x-center.x;
-    let dy = y-center.y;
+    let dx = x-center.x; let dy = y-center.y;
     const dist = Math.min(Math.hypot(dx,dy), maxDist);
     const angle = Math.atan2(dy,dx);
     dx = Math.cos(angle)*dist; dy = Math.sin(angle)*dist;
@@ -217,13 +199,12 @@
   // ===== АНИМАЦИЯ =====
   function animate(){
     requestAnimationFrame(animate);
-
-    const forward = new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
-    const right = new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
-
-    camera.position.add(forward.multiplyScalar(-move.forward*walkSpeed));
-    camera.position.add(right.multiplyScalar(move.side*walkSpeed));
-
+    if(gameStarted){
+      const forward = new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
+      const right = new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+      camera.position.add(forward.multiplyScalar(-move.forward*walkSpeed));
+      camera.position.add(right.multiplyScalar(move.side*walkSpeed));
+    }
     renderer.render(scene,camera);
   }
   animate();
