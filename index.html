@@ -3,17 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <title>Corrupted Reality — Prototype</title>
+
+  <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 
   <style>
-    body { margin: 0; overflow: hidden; }
-    #hint {
+    body { margin: 0; overflow: hidden; background: black; }
+
+    /* Кнопки для телефона */
+    .controls {
       position: fixed;
-      bottom: 10px;
+      bottom: 20px;
       width: 100%;
       text-align: center;
-      color: white;
-      font-family: monospace;
+      z-index: 10;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 12px 20px;
+      margin: 5px;
       opacity: 0.6;
     }
   </style>
@@ -21,15 +30,24 @@
 
 <body>
 
-<div id="hint">WASD — движение | Мышь / палец — осмотр</div>
+<!-- КНОПКИ ДЛЯ ТЕЛЕФОНА -->
+<div class="controls">
+  <button ontouchstart="moveForward=true" ontouchend="moveForward=false">▲</button>
+  <button ontouchstart="moveBackward=true" ontouchend="moveBackward=false">▼</button>
+</div>
 
-<a-scene>
-  <!-- Камера -->
-  <a-entity id="player"
-            position="0 1.6 0"
-            camera
-            wasd-controls="acceleration: 15"
-            look-controls="enabled: true; reverseMouseDrag: true">
+<a-scene
+  embedded
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false">
+
+  <!-- ИГРОК -->
+  <a-entity id="player" position="0 1.6 0">
+    <!-- Камера -->
+    <a-camera
+      look-controls="mouseEnabled: true; touchEnabled: true"
+      wasd-controls-enabled="false">
+    </a-camera>
   </a-entity>
 
   <!-- Пол -->
@@ -45,21 +63,41 @@
   <a-plane position="0 2 0" rotation="90 0 0" width="10" height="10" color="#333"></a-plane>
 
   <!-- Свет -->
-  <a-light type="ambient" intensity="0.6"></a-light>
-  <a-light type="point" position="0 2 0" intensity="0.6"></a-light>
+  <a-light type="ambient" intensity="0.7"></a-light>
 </a-scene>
 
 <script>
-  // 🔒 Ограничение обзора: только влево / вправо
   const player = document.querySelector('#player');
-  const lookControls = player.components['look-controls'];
+  const camera = player.querySelector('a-camera');
 
-  player.addEventListener('componentchanged', (e) => {
+  // ❌ ЗАПРЕТ ВЕРТИКАЛЬНОГО ОБЗОРА
+  camera.addEventListener('componentchanged', (e) => {
     if (e.detail.name === 'rotation') {
-      // Блокируем вертикаль
-      player.object3D.rotation.x = 0;
+      camera.object3D.rotation.x = 0;
     }
   });
+
+  // 🚶 ДВИЖЕНИЕ
+  let moveForward = false;
+  let moveBackward = false;
+
+  function tick() {
+    const direction = new THREE.Vector3();
+    camera.object3D.getWorldDirection(direction);
+    direction.y = 0;
+    direction.normalize();
+
+    if (moveForward) {
+      player.object3D.position.add(direction.multiplyScalar(0.03));
+    }
+    if (moveBackward) {
+      player.object3D.position.add(direction.multiplyScalar(-0.03));
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  tick();
 </script>
 
 </body>
