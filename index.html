@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Corrupted Reality — Prototype</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #hint {
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      color: white;
+      font-family: monospace;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="hint">WASD — движение | Мышь / палец — осмотр</div>
+
+<a-scene>
+  <!-- Камера -->
+  <a-entity id="player"
+            position="0 1.6 0"
+            camera
+            wasd-controls="acceleration: 15"
+            look-controls="enabled: true; reverseMouseDrag: true">
+  </a-entity>
+
+  <!-- Пол -->
+  <a-plane rotation="-90 0 0" width="10" height="10" color="#444"></a-plane>
+
+  <!-- Стены -->
+  <a-box position="0 1 -5" width="10" height="2" depth="0.2" color="#666"></a-box>
+  <a-box position="0 1 5" width="10" height="2" depth="0.2" color="#666"></a-box>
+  <a-box position="5 1 0" width="0.2" height="2" depth="10" color="#666"></a-box>
+  <a-box position="-5 1 0" width="0.2" height="2" depth="10" color="#666"></a-box>
+
+  <!-- Потолок -->
+  <a-plane position="0 2 0" rotation="90 0 0" width="10" height="10" color="#333"></a-plane>
+
+  <!-- Свет -->
+  <a-light type="ambient" intensity="0.6"></a-light>
+  <a-light type="point" position="0 2 0" intensity="0.6"></a-light>
+</a-scene>
+
+<script>
+  // 🔒 Ограничение обзора: только влево / вправо
+  const player = document.querySelector('#player');
+  const lookControls = player.components['look-controls'];
+
+  player.addEventListener('componentchanged', (e) => {
+    if (e.detail.name === 'rotation') {
+      // Блокируем вертикаль
+      player.object3D.rotation.x = 0;
+    }
+  });
+</script>
+
+</body>
+</html>
