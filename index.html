@@ -201,12 +201,23 @@ document.getElementById("joystick").ontouchend=()=>{
 function animate(){
   requestAnimationFrame(animate);
   if(started){
-    const f=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
-    camera.position.add(f.multiplyScalar(-move.f*0.05));
+    const speed = 0.05;
+const lim = roomSize / 2 - 0.4;
 
-    const lim=roomSize/2-0.4;
-    camera.position.x=Math.max(-lim,Math.min(lim,camera.position.x));
-    camera.position.z=Math.max(-lim,Math.min(lim,camera.position.z));
+const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+const right   = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+
+// пробуем движение вперёд
+let newZ = camera.position.z - forward.z * move.f * speed;
+if (newZ > -lim && newZ < lim) {
+  camera.position.z = newZ;
+}
+
+// пробуем движение вбок
+let newX = camera.position.x + right.x * move.s * speed;
+if (newX > -lim && newX < lim) {
+  camera.position.x = newX;
+}
 
     /* OPEN */
     const d=camera.position.distanceTo(door.position);
