@@ -155,13 +155,23 @@ wall(0, roomSize/2,Math.PI);
 wall(-roomSize/2,0,Math.PI/2);
 wall(roomSize/2,0,-Math.PI/2);
 
-/* Дверь */
-const door=new THREE.Mesh(
-  new THREE.PlaneGeometry(1.2,2.2),
-  new THREE.MeshStandardMaterial({color:0x3a2a1a})
+// ТЕКСТУРА ДВЕРИ
+const doorTex = loader.load(
+  "https://i.postimg.cc/9QJ2cSNz/pngtree-door-on-old-wall-png-image-11573440.png"
 );
-door.position.set(0,1.1,roomSize/2-0.01);
-door.rotation.y=Math.PI;
+doorTex.flipY = false;
+
+// ДВЕРЬ (СТАТИЧНАЯ)
+const door = new THREE.Mesh(
+  new THREE.PlaneGeometry(1.6, 2.4),
+  new THREE.MeshStandardMaterial({
+    map: doorTex,
+    transparent: true
+  })
+);
+
+door.position.set(0, 1.2, roomSize/2 - 0.01);
+door.rotation.y = Math.PI;
 scene.add(door);
 
 /* Управление */
