@@ -40,14 +40,28 @@ canvas{display:block;}
   z-index:5;
 }
 
-#vignette{
+/* Джойстик для телефона */
+#joystickBase{
   position:fixed;
-  inset:0;
+  bottom:10%;
+  left:10%;
+  width:120px;
+  height:120px;
+  background:rgba(255,255,255,0.1);
+  border-radius:50%;
+  touch-action:none;
+  display:none;
+  z-index:10;
+}
+#joystickThumb{
+  position:absolute;
+  width:60px;
+  height:60px;
+  background:rgba(255,255,255,0.3);
+  border-radius:50%;
+  left:30px;
+  top:30px;
   pointer-events:none;
-  background:radial-gradient(circle,
-    rgba(0,0,0,0) 55%,
-    rgba(40,20,0,0.55) 100%);
-  z-index:4;
 }
 </style>
 </head>
@@ -61,12 +75,12 @@ canvas{display:block;}
 </div>
 
 <div id="openText">OPEN</div>
-<div id="vignette"></div>
+<div id="joystickBase"><div id="joystickThumb"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script>
 let started=false;
-play.onclick=()=>{menu.style.display="none";started=true;}
+play.onclick=()=>{menu.style.display="none";started=true; if(window.innerWidth<900) document.getElementById('joystickBase').style.display='block';}
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x111111);
@@ -126,7 +140,7 @@ wall(0, roomSize/2,Math.PI);
 wall(-roomSize/2,0,Math.PI/2);
 wall(roomSize/2,0,-Math.PI/2);
 
-/* ДВЕРЬ (исправленная) */
+/* ДВЕРЬ */
 const doorBase=new THREE.Mesh(
   new THREE.BoxGeometry(1.6,2.4,0.15),
   new THREE.MeshStandardMaterial({
@@ -146,21 +160,19 @@ const doorFront=new THREE.Mesh(
     emissiveIntensity:0.6
   })
 );
-doorFront.position.set(0,1.2,roomSize/2+0.01);
+doorFront.position.set(0,1.2,roomSize/2+0.08); // выдвинуто вперед
 doorFront.rotation.y=Math.PI;
 scene.add(doorFront);
 
-/* ОКНО НА ЛЕВОЙ СТЕНЕ */
+/* Окно */
 const windowGroup=new THREE.Group();
 windowGroup.position.set(-roomSize/2+0.01,1.8,0);
 windowGroup.rotation.y=Math.PI/2;
 
-/* свет окна */
 const windowLight=new THREE.PointLight(0xffffff,1.2,5);
 windowLight.position.set(0,0,0.3);
 windowGroup.add(windowLight);
 
-/* основа */
 const glass=new THREE.Mesh(
   new THREE.PlaneGeometry(1.4,1.4),
   new THREE.MeshStandardMaterial({
@@ -171,51 +183,109 @@ const glass=new THREE.Mesh(
 );
 windowGroup.add(glass);
 
-/* перегородки */
 const barMat=new THREE.MeshStandardMaterial({color:0x222222});
 const vBar=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.4,0.05),barMat);
 const hBar=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.05,0.05),barMat);
 windowGroup.add(vBar);
 windowGroup.add(hBar);
 
-/* подставка */
 const sill=new THREE.Mesh(
   new THREE.BoxGeometry(1.6,0.1,0.4),
   new THREE.MeshStandardMaterial({color:0x1a1a1a})
 );
-sill.position.y=-0.75;
-sill.position.z=0.2;
+sill.position.set(0,-0.75,0.2);
 windowGroup.add(sill);
 
 scene.add(windowGroup);
 
-/* Управление (упрощённо) */
-let yaw=0,move={f:0,s:0};
-addEventListener("mousemove",e=>{
-  if(e.buttons) yaw-=e.movementX*0.002;
+/* УПРАВЛЕНИЕ */
+let yaw=0, move={f:0,s:0};
+
+// ПК - клавиши
+addEventListener("keydown", e=>{
+  if(e.key==="w") move.f=1;
+  if(e.key==="s") move.f=-1;
+  if(e.key==="a") move.s=-1;
+  if(e.key==="d") move.s=1;
 });
-addEventListener("keydown",e=>{
-  if(e.key==="w")move.f=1;
-  if(e.key==="s")move.f=-1;
-  if(e.key==="a")move.s=-1;
-  if(e.key==="d")move.s=1;
+addEventListener("keyup", e=>{
+  if(e.key==="w"||e.key==="s") move.f=0;
+  if(e.key==="a"||e.key==="d") move.s=0;
 });
-addEventListener("keyup",()=>move={f:0,s:0});
+
+// ПК - мышь
+addEventListener("mousemove", e=>{
+  if(e.buttons) yaw -= e.movementX*0.002;
+});
+
+/* Телефон - джойстик */
+const joystickBase=document.getElementById('joystickBase');
+const joystickThumb=document.getElementById('joystickThumb');
+let joyStartX=0, joyStartY=0, joyX=0, joyY=0, touching=false;
+
+joystickBase.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  touching=true;
+  joyStartX = e.touches[0].clientX;
+  joyStartY = e.touches[0].clientY;
+});
+joystickBase.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  if(!touching) return;
+  let dx = e.touches[0].clientX - joyStartX;
+  let dy = e.touches[0].clientY - joyStartY;
+  const max = 50;
+  joyX = Math.max(-1, Math.min(1, dx/max));
+  joyY = Math.max(-1, Math.min(1, dy/max));
+  joystickThumb.style.left = (50+joyX*50)+'px';
+  joystickThumb.style.top = (50+joyY*50)+'px';
+});
+joystickBase.addEventListener('touchend', e=>{
+  touching=false;
+  joyX=joyY=0;
+  joystickThumb.style.left='30px';
+  joystickThumb.style.top='30px';
+});
+
+// Телефон - вращение (правая половина экрана)
+let touchRotX=0;
+addEventListener('touchstart', e=>{
+  if(e.touches[0].clientX>window.innerWidth/2) touchRotX=e.touches[0].clientX;
+});
+addEventListener('touchmove', e=>{
+  if(e.touches[0].clientX>window.innerWidth/2){
+    let dx = e.touches[0].clientX - touchRotX;
+    yaw -= dx*0.002;
+    touchRotX = e.touches[0].clientX;
+  }
+});
 
 /* Анимация */
 function animate(){
   requestAnimationFrame(animate);
   if(started){
     camera.rotation.y=yaw;
-    const sp=0.05,lim=roomSize/2-0.4;
-    camera.position.x=Math.max(-lim,Math.min(lim,camera.position.x+Math.sin(yaw)*move.f*sp+Math.cos(yaw)*move.s*sp));
-    camera.position.z=Math.max(-lim,Math.min(lim,camera.position.z+Math.cos(yaw)*move.f*sp-Math.sin(yaw)*move.s*sp));
-    openText.style.opacity=camera.position.distanceTo(doorBase.position)<1.8?1:0;
+
+    // ПК
+    let sp=0.05;
+    let lim=roomSize/2-0.4;
+    camera.position.x = Math.max(-lim, Math.min(lim, camera.position.x + Math.sin(yaw)*move.f*sp + Math.cos(yaw)*move.s*sp));
+    camera.position.z = Math.max(-lim, Math.min(lim, camera.position.z + Math.cos(yaw)*move.f*sp - Math.sin(yaw)*move.s*sp));
+
+    // Телефон
+    const spJoy = 0.05;
+    camera.position.x += Math.sin(yaw)*joyY*spJoy + Math.cos(yaw)*joyX*spJoy;
+    camera.position.z += Math.cos(yaw)*joyY*spJoy - Math.sin(yaw)*joyX*spJoy;
+
+    // OPEN текст
+    openText.style.opacity = camera.position.distanceTo(doorBase.position)<1.8?1:0;
   }
+
   renderer.render(scene,camera);
 }
 animate();
 
+/* Ресайз */
 onresize=()=>{
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
