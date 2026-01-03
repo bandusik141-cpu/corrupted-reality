@@ -6,72 +6,63 @@
 <title>Corrupted Reality</title>
 
 <style>
-  body { margin:0; overflow:hidden; background:black; }
-  canvas { display:block; }
+body{margin:0;overflow:hidden;background:black;}
+canvas{display:block;}
 
-  /* Меню */
-  #menu {
-    position:fixed;
-    inset:0;
-    background:black;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    color:white;
-    font-family:monospace;
-    z-index:10;
-  }
-  #menu button {
-    margin:10px;
-    padding:10px 30px;
-    font-size:20px;
-  }
+#menu{
+  position:fixed;inset:0;
+  background:black;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:white;
+  font-family:monospace;
+  z-index:10;
+}
+#menu button{
+  margin:10px;
+  padding:10px 30px;
+  font-size:20px;
+}
 
-  /* OPEN */
-  #openText {
-    position:fixed;
-    bottom:20%;
-    width:100%;
-    text-align:center;
-    font-family:monospace;
-    font-size:22px;
-    color:white;
-    opacity:0;
-    transition:opacity 0.2s;
-    pointer-events:none;
-    z-index:5;
-  }
+#openText{
+  position:fixed;
+  bottom:20%;
+  width:100%;
+  text-align:center;
+  font-family:monospace;
+  font-size:22px;
+  color:white;
+  opacity:0;
+  transition:opacity .2s;
+  pointer-events:none;
+  z-index:5;
+}
 
-  /* Виньетка */
-  #vignette {
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    background:radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(50,25,0,0.8) 100%);
-    z-index:4;
-  }
+#vignette{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(50,25,0,0.8) 100%);
+  z-index:4;
+}
 
-  /* Джойстик */
-  #joystick {
-    position:fixed;
-    left:0;
-    top:0;
-    width:50%;
-    height:100%;
-    touch-action:none;
-    z-index:3;
-  }
-  #stick {
-    position:absolute;
-    left:50px;
-    top:50%;
-    width:40px;
-    height:40px;
-    background:rgba(255,255,255,0.5);
-    border-radius:50%;
-    transform:translateY(-50%);
-  }
+#joystick{
+  position:fixed;
+  left:0;top:0;
+  width:50%;height:100%;
+  touch-action:none;
+  z-index:3;
+}
+#stick{
+  position:absolute;
+  left:50px;top:50%;
+  width:40px;height:40px;
+  background:rgba(255,255,255,.5);
+  border-radius:50%;
+  transform:translateY(-50%);
+}
 </style>
 </head>
 
@@ -113,11 +104,11 @@ const loader=new THREE.TextureLoader();
 const floorTex=loader.load("https://i.postimg.cc/qMrFMmrT/tmpfdd10f506ecf00611c27c317004b7676.jpg");
 const wallTex=loader.load("https://i.postimg.cc/J4wQ1tbR/Untitled30-20260102223542.png");
 const ceilTex=loader.load("https://i.postimg.cc/wvdryFNx/Untitled32-20260102230233.png");
+const doorTex=loader.load("https://i.postimg.cc/9QJ2cSNz/pngtree-door-on-old-wall-png-image-11573440.png");
 
-floorTex.wrapS=floorTex.wrapT=THREE.RepeatWrapping;
-wallTex.wrapS=wallTex.wrapT=THREE.RepeatWrapping;
-ceilTex.wrapS=ceilTex.wrapT=THREE.RepeatWrapping;
-
+[floorTex,wallTex,ceilTex].forEach(t=>{
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+});
 floorTex.repeat.set(2,2);
 wallTex.repeat.set(2,1);
 ceilTex.repeat.set(2,2);
@@ -141,13 +132,13 @@ ceiling.position.y=height;
 ceiling.rotation.x=Math.PI/2;
 scene.add(ceiling);
 
-function wall(x,z,rot){
+function wall(x,z,r){
   const w=new THREE.Mesh(
     new THREE.PlaneGeometry(roomSize,height),
     new THREE.MeshStandardMaterial({map:wallTex})
   );
   w.position.set(x,height/2,z);
-  w.rotation.y=rot;
+  w.rotation.y=r;
   scene.add(w);
 }
 wall(0,-roomSize/2,0);
@@ -155,24 +146,22 @@ wall(0, roomSize/2,Math.PI);
 wall(-roomSize/2,0,Math.PI/2);
 wall(roomSize/2,0,-Math.PI/2);
 
-// ТЕКСТУРА ДВЕРИ
-const doorTex = loader.load(
-  "https://i.postimg.cc/9QJ2cSNz/pngtree-door-on-old-wall-png-image-11573440.png"
+/* ДВЕРЬ — ОБЪЁМ */
+const doorBase=new THREE.Mesh(
+  new THREE.BoxGeometry(1.6,2.4,0.15),
+  new THREE.MeshStandardMaterial({color:0x000000,roughness:.9})
 );
-doorTex.flipY = false;
+doorBase.position.set(0,1.2,roomSize/2-0.075);
+scene.add(doorBase);
 
-// ДВЕРЬ (СТАТИЧНАЯ)
-const door = new THREE.Mesh(
-  new THREE.PlaneGeometry(1.6, 2.4),
-  new THREE.MeshStandardMaterial({
-    map: doorTex,
-    transparent: true
-  })
+/* ДВЕРЬ — PNG */
+const doorFront=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.6,2.4),
+  new THREE.MeshStandardMaterial({map:doorTex,transparent:true})
 );
-
-door.position.set(0, 1.2, roomSize/2 - 0.01);
-door.rotation.y = Math.PI;
-scene.add(door);
+doorFront.position.set(0,1.2,roomSize/2-0.001);
+doorFront.rotation.y=Math.PI;
+scene.add(doorFront);
 
 /* Управление */
 let yaw=0,look=false,lastX=0;
@@ -192,11 +181,10 @@ addEventListener("keydown",e=>{
   if(e.key==="a")move.s=-1;
   if(e.key==="d")move.s=1;
 });
-addEventListener("keyup", e => {
-  if (e.key === "w" || e.key === "s") move.f = 0;
-  if (e.key === "a" || e.key === "d") move.s = 0;
+addEventListener("keyup",e=>{
+  if(e.key==="w"||e.key==="s")move.f=0;
+  if(e.key==="a"||e.key==="d")move.s=0;
 });
-
 
 /* Джойстик */
 const stick=document.getElementById("stick");
@@ -205,37 +193,32 @@ document.getElementById("joystick").ontouchstart=()=>joy=true;
 document.getElementById("joystick").ontouchmove=e=>{
   if(!joy)return;
   const y=e.touches[0].clientY-innerHeight/2;
-  move.f=-y/100;
+  move.f=-y/120;
 };
 document.getElementById("joystick").ontouchend=()=>{
-  joy=false; move.f=0; stick.style.top="50%";
+  joy=false;move.f=0;stick.style.top="50%";
 };
 
-/* Анимация */
 /* Анимация */
 function animate(){
   requestAnimationFrame(animate);
   if(started){
-    const speed = 0.05;
-const lim = roomSize / 2 - 0.4;
+    const speed=0.05;
+    const lim=roomSize/2-0.4;
 
-const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
-const right   = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+    const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
+    const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
 
-// пробуем движение вперёд
-let newZ = camera.position.z - forward.z * move.f * speed;
-if (newZ > -lim && newZ < lim) {
-  camera.position.z = newZ;
-}
+    let newX=camera.position.x + right.x*move.s*speed;
+    let newZ=camera.position.z - forward.z*move.f*speed;
 
-// пробуем движение вбок
-let newX = camera.position.x + right.x * move.s * speed;
-if (newX > -lim && newX < lim) {
-  camera.position.x = newX;
-}
+    newX=Math.max(-lim,Math.min(lim,newX));
+    newZ=Math.max(-lim,Math.min(lim,newZ));
 
-    /* OPEN */
-    const d=camera.position.distanceTo(door.position);
+    camera.position.x=newX;
+    camera.position.z=newZ;
+
+    const d=camera.position.distanceTo(doorBase.position);
     document.getElementById("openText").style.opacity=d<1.8?1:0;
   }
   renderer.render(scene,camera);
