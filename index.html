@@ -182,7 +182,11 @@ addEventListener("keydown",e=>{
   if(e.key==="a")move.s=-1;
   if(e.key==="d")move.s=1;
 });
-addEventListener("keyup",()=>move={f:0,s:0});
+addEventListener("keyup", e => {
+  if (e.key === "w" || e.key === "s") move.f = 0;
+  if (e.key === "a" || e.key === "d") move.s = 0;
+});
+
 
 /* Джойстик */
 const stick=document.getElementById("stick");
