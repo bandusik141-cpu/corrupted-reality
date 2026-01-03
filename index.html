@@ -44,7 +44,7 @@ canvas{display:block;}
   position:fixed;
   inset:0;
   pointer-events:none;
-  background:radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(50,25,0,0.8) 100%);
+  background:radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(40,20,0,0.85) 100%);
   z-index:4;
 }
 
@@ -87,7 +87,7 @@ document.getElementById("play").onclick=()=>{
 };
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x111111);
+scene.background=new THREE.Color(0x0e0e0e);
 
 const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,100);
 camera.position.set(0,1.6,2);
@@ -97,7 +97,7 @@ renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
 /* Свет */
-scene.add(new THREE.AmbientLight(0x886644,0.45));
+scene.add(new THREE.AmbientLight(0x664422,0.35));
 
 /* Текстуры */
 const loader=new THREE.TextureLoader();
@@ -105,6 +105,8 @@ const floorTex=loader.load("https://i.postimg.cc/qMrFMmrT/tmpfdd10f506ecf00611c2
 const wallTex=loader.load("https://i.postimg.cc/J4wQ1tbR/Untitled30-20260102223542.png");
 const ceilTex=loader.load("https://i.postimg.cc/wvdryFNx/Untitled32-20260102230233.png");
 const doorTex=loader.load("https://i.postimg.cc/9QJ2cSNz/pngtree-door-on-old-wall-png-image-11573440.png");
+
+doorTex.flipY=false;
 
 [floorTex,wallTex,ceilTex].forEach(t=>{
   t.wrapS=t.wrapT=THREE.RepeatWrapping;
@@ -146,22 +148,43 @@ wall(0, roomSize/2,Math.PI);
 wall(-roomSize/2,0,Math.PI/2);
 wall(roomSize/2,0,-Math.PI/2);
 
-/* ДВЕРЬ — ОБЪЁМ */
+/* Дверь */
 const doorBase=new THREE.Mesh(
   new THREE.BoxGeometry(1.6,2.4,0.15),
   new THREE.MeshStandardMaterial({color:0x000000,roughness:.9})
 );
-doorBase.position.set(0,1.2,roomSize/2-0.075);
+doorBase.position.set(0,1.2,roomSize/2-0.08);
 scene.add(doorBase);
 
-/* ДВЕРЬ — PNG */
 const doorFront=new THREE.Mesh(
-  new THREE.PlaneGeometry(1.6,2.4),
-  new THREE.MeshStandardMaterial({map:doorTex,transparent:true})
+  new THREE.PlaneGeometry(1.55,2.35),
+  new THREE.MeshStandardMaterial({
+    map:doorTex,
+    transparent:true,
+    depthWrite:false
+  })
 );
-doorFront.position.set(0,1.2,roomSize/2-0.001);
+doorFront.position.set(0,1.2,roomSize/2+0.01);
 doorFront.rotation.y=Math.PI;
 scene.add(doorFront);
+
+/* НЕОНОВОЕ ОКНО (СЛЕВА ОТ ДВЕРИ) */
+const windowMesh=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.2,1.2),
+  new THREE.MeshStandardMaterial({
+    color:0xffffff,
+    emissive:0xffffff,
+    emissiveIntensity:1.6
+  })
+);
+windowMesh.position.set(-2,1.8,roomSize/2-0.01);
+windowMesh.rotation.y=Math.PI;
+scene.add(windowMesh);
+
+/* Свет от окна */
+const windowLight=new THREE.PointLight(0xffffff,1.5,5);
+windowLight.position.set(-2,1.8,roomSize/2-0.2);
+scene.add(windowLight);
 
 /* Управление */
 let yaw=0,look=false,lastX=0;
@@ -186,19 +209,6 @@ addEventListener("keyup",e=>{
   if(e.key==="a"||e.key==="d")move.s=0;
 });
 
-/* Джойстик */
-const stick=document.getElementById("stick");
-let joy=false;
-document.getElementById("joystick").ontouchstart=()=>joy=true;
-document.getElementById("joystick").ontouchmove=e=>{
-  if(!joy)return;
-  const y=e.touches[0].clientY-innerHeight/2;
-  move.f=-y/120;
-};
-document.getElementById("joystick").ontouchend=()=>{
-  joy=false;move.f=0;stick.style.top="50%";
-};
-
 /* Анимация */
 function animate(){
   requestAnimationFrame(animate);
@@ -206,20 +216,14 @@ function animate(){
     const speed=0.05;
     const lim=roomSize/2-0.4;
 
-    const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
-    const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+    const f=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
+    const r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
 
-    let newX=camera.position.x + right.x*move.s*speed;
-    let newZ=camera.position.z - forward.z*move.f*speed;
+    camera.position.x=Math.max(-lim,Math.min(lim,camera.position.x+r.x*move.s*speed));
+    camera.position.z=Math.max(-lim,Math.min(lim,camera.position.z-f.z*move.f*speed));
 
-    newX=Math.max(-lim,Math.min(lim,newX));
-    newZ=Math.max(-lim,Math.min(lim,newZ));
-
-    camera.position.x=newX;
-    camera.position.z=newZ;
-
-    const d=camera.position.distanceTo(doorBase.position);
-    document.getElementById("openText").style.opacity=d<1.8?1:0;
+    document.getElementById("openText").style.opacity=
+      camera.position.distanceTo(doorBase.position)<1.8?1:0;
   }
   renderer.render(scene,camera);
 }
