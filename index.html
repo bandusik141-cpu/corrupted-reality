@@ -80,7 +80,11 @@ canvas{display:block;}
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script>
 let started=false;
-play.onclick=()=>{menu.style.display="none";started=true; if(window.innerWidth<900) document.getElementById('joystickBase').style.display='block';}
+play.onclick=()=>{
+  menu.style.display="none";
+  started=true;
+  if(window.innerWidth<900) document.getElementById('joystickBase').style.display='block';
+}
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x111111);
@@ -103,34 +107,23 @@ const ceilTex=loader.load("https://i.postimg.cc/wvdryFNx/Untitled32-202601022302
 const doorTex=loader.load("https://i.postimg.cc/9QJ2cSNz/pngtree-door-on-old-wall-png-image-11573440.png");
 doorTex.flipY=false;
 
-[floorTex,wallTex,ceilTex].forEach(t=>{
-  t.wrapS=t.wrapT=THREE.RepeatWrapping;
-});
+[floorTex,wallTex,ceilTex].forEach(t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;});
 
 const roomSize=8, height=3;
 
 /* Пол и потолок */
-const floor=new THREE.Mesh(
-  new THREE.PlaneGeometry(roomSize,roomSize),
-  new THREE.MeshStandardMaterial({map:floorTex})
-);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(roomSize,roomSize), new THREE.MeshStandardMaterial({map:floorTex}));
 floor.rotation.x=-Math.PI/2;
 scene.add(floor);
 
-const ceiling=new THREE.Mesh(
-  new THREE.PlaneGeometry(roomSize,roomSize),
-  new THREE.MeshStandardMaterial({map:ceilTex})
-);
+const ceiling=new THREE.Mesh(new THREE.PlaneGeometry(roomSize,roomSize), new THREE.MeshStandardMaterial({map:ceilTex}));
 ceiling.position.y=height;
 ceiling.rotation.x=Math.PI/2;
 scene.add(ceiling);
 
 /* Стены */
 function wall(x,z,r){
-  const w=new THREE.Mesh(
-    new THREE.PlaneGeometry(roomSize,height),
-    new THREE.MeshStandardMaterial({map:wallTex})
-  );
+  const w=new THREE.Mesh(new THREE.PlaneGeometry(roomSize,height), new THREE.MeshStandardMaterial({map:wallTex}));
   w.position.set(x,height/2,z);
   w.rotation.y=r;
   scene.add(w);
@@ -141,26 +134,12 @@ wall(-roomSize/2,0,Math.PI/2);
 wall(roomSize/2,0,-Math.PI/2);
 
 /* ДВЕРЬ */
-const doorBase=new THREE.Mesh(
-  new THREE.BoxGeometry(1.6,2.4,0.15),
-  new THREE.MeshStandardMaterial({
-    color:0x2a1a10,
-    roughness:0.8
-  })
-);
+const doorBase=new THREE.Mesh(new THREE.BoxGeometry(1.6,2.4,0.15), new THREE.MeshStandardMaterial({color:0x2a1a10, roughness:0.8}));
 doorBase.position.set(0,1.2,roomSize/2-0.08);
 scene.add(doorBase);
 
-const doorFront=new THREE.Mesh(
-  new THREE.PlaneGeometry(1.55,2.35),
-  new THREE.MeshStandardMaterial({
-    map:doorTex,
-    transparent:true,
-    emissive:0x222222,
-    emissiveIntensity:0.6
-  })
-);
-doorFront.position.set(0,1.2,roomSize/2+0.08); // выдвинуто вперед
+const doorFront=new THREE.Mesh(new THREE.PlaneGeometry(1.55,2.35), new THREE.MeshStandardMaterial({map:doorTex, transparent:true, emissive:0x222222, emissiveIntensity:0.6}));
+doorFront.position.set(0,1.2,roomSize/2+0.08);
 doorFront.rotation.y=Math.PI;
 scene.add(doorFront);
 
@@ -168,34 +147,13 @@ scene.add(doorFront);
 const windowGroup=new THREE.Group();
 windowGroup.position.set(-roomSize/2+0.01,1.8,0);
 windowGroup.rotation.y=Math.PI/2;
-
-const windowLight=new THREE.PointLight(0xffffff,1.2,5);
-windowLight.position.set(0,0,0.3);
-windowGroup.add(windowLight);
-
-const glass=new THREE.Mesh(
-  new THREE.PlaneGeometry(1.4,1.4),
-  new THREE.MeshStandardMaterial({
-    color:0xffffff,
-    emissive:0xffffff,
-    emissiveIntensity:1.2
-  })
-);
-windowGroup.add(glass);
-
+const windowLight=new THREE.PointLight(0xffffff,1.2,5); windowLight.position.set(0,0,0.3); windowGroup.add(windowLight);
+const glass=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.4), new THREE.MeshStandardMaterial({color:0xffffff, emissive:0xffffff, emissiveIntensity:1.2})); windowGroup.add(glass);
 const barMat=new THREE.MeshStandardMaterial({color:0x222222});
-const vBar=new THREE.Mesh(new THREE.BoxGeometry(0.05,1.4,0.05),barMat);
-const hBar=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.05,0.05),barMat);
-windowGroup.add(vBar);
-windowGroup.add(hBar);
-
-const sill=new THREE.Mesh(
-  new THREE.BoxGeometry(1.6,0.1,0.4),
-  new THREE.MeshStandardMaterial({color:0x1a1a1a})
-);
-sill.position.set(0,-0.75,0.2);
-windowGroup.add(sill);
-
+windowGroup.add(new THREE.Mesh(new THREE.BoxGeometry(0.05,1.4,0.05),barMat));
+windowGroup.add(new THREE.Mesh(new THREE.BoxGeometry(1.4,0.05,0.05),barMat));
+const sill=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.1,0.4), new THREE.MeshStandardMaterial({color:0x1a1a1a}));
+sill.position.set(0,-0.75,0.2); windowGroup.add(sill);
 scene.add(windowGroup);
 
 /* УПРАВЛЕНИЕ */
@@ -218,17 +176,11 @@ addEventListener("mousemove", e=>{
   if(e.buttons) yaw -= e.movementX*0.002;
 });
 
-/* Телефон - джойстик */
+// Телефон - джойстик
 const joystickBase=document.getElementById('joystickBase');
 const joystickThumb=document.getElementById('joystickThumb');
 let joyStartX=0, joyStartY=0, joyX=0, joyY=0, touching=false;
-
-joystickBase.addEventListener('touchstart', e=>{
-  e.preventDefault();
-  touching=true;
-  joyStartX = e.touches[0].clientX;
-  joyStartY = e.touches[0].clientY;
-});
+joystickBase.addEventListener('touchstart', e=>{e.preventDefault(); touching=true; joyStartX=e.touches[0].clientX; joyStartY=e.touches[0].clientY;});
 joystickBase.addEventListener('touchmove', e=>{
   e.preventDefault();
   if(!touching) return;
@@ -237,17 +189,12 @@ joystickBase.addEventListener('touchmove', e=>{
   const max = 50;
   joyX = Math.max(-1, Math.min(1, dx/max));
   joyY = Math.max(-1, Math.min(1, dy/max));
-  joystickThumb.style.left = (50+joyX*50)+'px';
-  joystickThumb.style.top = (50+joyY*50)+'px';
+  joystickThumb.style.left = (30 + joyX*60)+'px';
+  joystickThumb.style.top = (30 + joyY*60)+'px';
 });
-joystickBase.addEventListener('touchend', e=>{
-  touching=false;
-  joyX=joyY=0;
-  joystickThumb.style.left='30px';
-  joystickThumb.style.top='30px';
-});
+joystickBase.addEventListener('touchend', e=>{touching=false; joyX=joyY=0; joystickThumb.style.left='30px'; joystickThumb.style.top='30px';});
 
-// Телефон - вращение (правая половина экрана)
+// Телефон - правая половина экрана поворот
 let touchRotX=0;
 addEventListener('touchstart', e=>{
   if(e.touches[0].clientX>window.innerWidth/2) touchRotX=e.touches[0].clientX;
@@ -255,7 +202,7 @@ addEventListener('touchstart', e=>{
 addEventListener('touchmove', e=>{
   if(e.touches[0].clientX>window.innerWidth/2){
     let dx = e.touches[0].clientX - touchRotX;
-    yaw -= dx*0.002;
+    yaw -= dx*0.01; // увеличенный спид поворота
     touchRotX = e.touches[0].clientX;
   }
 });
@@ -266,16 +213,16 @@ function animate(){
   if(started){
     camera.rotation.y=yaw;
 
-    // ПК
-    let sp=0.05;
-    let lim=roomSize/2-0.4;
-    camera.position.x = Math.max(-lim, Math.min(lim, camera.position.x + Math.sin(yaw)*move.f*sp + Math.cos(yaw)*move.s*sp));
-    camera.position.z = Math.max(-lim, Math.min(lim, camera.position.z + Math.cos(yaw)*move.f*sp - Math.sin(yaw)*move.s*sp));
+    const sp=0.05;
+    const lim=roomSize/2-0.4;
 
-    // Телефон
-    const spJoy = 0.05;
-    camera.position.x += Math.sin(yaw)*joyY*spJoy + Math.cos(yaw)*joyX*spJoy;
-    camera.position.z += Math.cos(yaw)*joyY*spJoy - Math.sin(yaw)*joyX*spJoy;
+    // ПК движение
+    camera.position.x += Math.sin(yaw)*move.f*sp - Math.cos(yaw)*move.s*sp;
+    camera.position.z += Math.cos(yaw)*move.f*sp + Math.sin(yaw)*move.s*sp;
+
+    // Телефон движение джойстиком
+    camera.position.x += Math.sin(yaw)*joyY*sp + Math.cos(yaw)*joyX*sp;
+    camera.position.z += Math.cos(yaw)*joyY*sp - Math.sin(yaw)*joyX*sp;
 
     // OPEN текст
     openText.style.opacity = camera.position.distanceTo(doorBase.position)<1.8?1:0;
