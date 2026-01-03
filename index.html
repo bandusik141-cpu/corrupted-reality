@@ -1,220 +1,226 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Corrupted Reality — Atmospheric Room</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Corrupted Reality</title>
 
-  <style>
-    body { margin: 0; overflow: hidden; background: black; }
-    canvas { display: block; }
+<style>
+  body { margin:0; overflow:hidden; background:black; }
+  canvas { display:block; }
 
-    /* Главное меню */
-    #menu {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: #000;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 50;
-      font-family: monospace;
-      color: white;
-    }
-    #menu h1 { margin-bottom: 30px; }
-    #menu button {
-      font-size: 20px;
-      margin: 10px;
-      padding: 10px 30px;
-      cursor: pointer;
-    }
+  /* Меню */
+  #menu {
+    position:fixed;
+    inset:0;
+    background:black;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    color:white;
+    font-family:monospace;
+    z-index:10;
+  }
+  #menu button {
+    margin:10px;
+    padding:10px 30px;
+    font-size:20px;
+  }
 
-    /* Джойстик */
-    #joystick { position: fixed; left: 0; bottom: 0; width: 50%; height: 100%; z-index: 10; touch-action: none; }
-    #stick { position: absolute; left: 50px; top: calc(50% - 20px); width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.5); }
+  /* OPEN */
+  #openText {
+    position:fixed;
+    bottom:20%;
+    width:100%;
+    text-align:center;
+    font-family:monospace;
+    font-size:22px;
+    color:white;
+    opacity:0;
+    transition:opacity 0.2s;
+    pointer-events:none;
+    z-index:5;
+  }
 
-    /* Виньетка по краям */
-    #vignette {
-      position: fixed; top:0; left:0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-      background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(50,25,0,0.8) 100%);
-      z-index: 20;
-    }
+  /* Виньетка */
+  #vignette {
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background:radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(50,25,0,0.8) 100%);
+    z-index:4;
+  }
 
-    /* Подсказка */
-    #hint {
-      position: fixed; bottom: 10px; width: 100%;
-      text-align: center; color: white; font-family: monospace;
-      opacity: 0.6; z-index: 5; pointer-events: none;
-    }
-  </style>
+  /* Джойстик */
+  #joystick {
+    position:fixed;
+    left:0;
+    top:0;
+    width:50%;
+    height:100%;
+    touch-action:none;
+    z-index:3;
+  }
+  #stick {
+    position:absolute;
+    left:50px;
+    top:50%;
+    width:40px;
+    height:40px;
+    background:rgba(255,255,255,0.5);
+    border-radius:50%;
+    transform:translateY(-50%);
+  }
+</style>
 </head>
 
 <body>
 
 <div id="menu">
   <h1>Corrupted Reality</h1>
-  <button id="playBtn">Play</button>
-  <button id="settingsBtn">Settings</button>
+  <button id="play">Play</button>
+  <button onclick="alert('Soon')">Settings</button>
 </div>
 
-<div id="hint">WASD / ⬅️➡️ — ходьба | Мышь / палец — осмотр</div>
+<div id="openText">OPEN</div>
 <div id="joystick"><div id="stick"></div></div>
 <div id="vignette"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script>
-  // ===== ПЕРЕМЕННЫЕ =====
-  let gameStarted = false;
-  const menu = document.getElementById('menu');
-  const playBtn = document.getElementById('playBtn');
-  const settingsBtn = document.getElementById('settingsBtn');
+let started=false;
+document.getElementById("play").onclick=()=>{
+  document.getElementById("menu").style.display="none";
+  started=true;
+};
 
-  playBtn.addEventListener('click', () => { menu.style.display='none'; gameStarted=true; });
-  settingsBtn.addEventListener('click', () => { alert("Settings will be available soon!"); });
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x111111);
 
-  // ===== СЦЕНА =====
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x111111);
+const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,100);
+camera.position.set(0,1.6,2);
 
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-  camera.position.set(0,1.6,3);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+document.body.appendChild(renderer.domElement);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+/* Свет */
+scene.add(new THREE.AmbientLight(0x886644,0.45));
 
-  // ===== ОСВЕЩЕНИЕ =====
-  const ambientLight = new THREE.AmbientLight(0x886644, 0.5); // тусклый коричневый свет
-  scene.add(ambientLight);
+/* Текстуры */
+const loader=new THREE.TextureLoader();
+const floorTex=loader.load("https://i.postimg.cc/qMrFMmrT/tmpfdd10f506ecf00611c27c317004b7676.jpg");
+const wallTex=loader.load("https://i.postimg.cc/J4wQ1tbR/Untitled30-20260102223542.png");
+const ceilTex=loader.load("https://i.postimg.cc/wvdryFNx/Untitled32-20260102230233.png");
 
-  // ===== ТЕКСТУРЫ =====
-  const loader = new THREE.TextureLoader();
-  const floorTexture = loader.load('https://i.postimg.cc/qMrFMmrT/tmpfdd10f506ecf00611c27c317004b7676.jpg');
-  floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
-  floorTexture.repeat.set(2,2);
+floorTex.wrapS=floorTex.wrapT=THREE.RepeatWrapping;
+wallTex.wrapS=wallTex.wrapT=THREE.RepeatWrapping;
+ceilTex.wrapS=ceilTex.wrapT=THREE.RepeatWrapping;
 
-  const wallTexture = loader.load('https://i.postimg.cc/J4wQ1tbR/Untitled30-20260102223542.png');
-  wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
-  wallTexture.repeat.set(2,1);
+floorTex.repeat.set(2,2);
+wallTex.repeat.set(2,1);
+ceilTex.repeat.set(2,2);
 
-  const ceilingTexture = loader.load('https://i.postimg.cc/wvdryFNx/Untitled32-20260102230233.png');
-  ceilingTexture.wrapS = ceilingTexture.wrapT = THREE.RepeatWrapping;
-  ceilingTexture.repeat.set(2,2);
+/* Комната */
+const roomSize=8;
+const height=3;
 
-  // ===== ПАРАМЕТРЫ КОМНАТЫ =====
-  const roomSize = 10;
-  const roomHeight = 3;
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(roomSize,roomSize),
+  new THREE.MeshStandardMaterial({map:floorTex})
+);
+floor.rotation.x=-Math.PI/2;
+scene.add(floor);
 
-  // Пол
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomSize), new THREE.MeshStandardMaterial({ map: floorTexture }));
-  floor.rotation.x = -Math.PI/2; scene.add(floor);
+const ceiling=new THREE.Mesh(
+  new THREE.PlaneGeometry(roomSize,roomSize),
+  new THREE.MeshStandardMaterial({map:ceilTex})
+);
+ceiling.position.y=height;
+ceiling.rotation.x=Math.PI/2;
+scene.add(ceiling);
 
-  // Потолок
-  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomSize), new THREE.MeshStandardMaterial({ map: ceilingTexture }));
-  ceiling.position.y = roomHeight; ceiling.rotation.x = Math.PI/2; scene.add(ceiling);
+function wall(x,z,rot){
+  const w=new THREE.Mesh(
+    new THREE.PlaneGeometry(roomSize,height),
+    new THREE.MeshStandardMaterial({map:wallTex})
+  );
+  w.position.set(x,height/2,z);
+  w.rotation.y=rot;
+  scene.add(w);
+}
+wall(0,-roomSize/2,0);
+wall(0, roomSize/2,Math.PI);
+wall(-roomSize/2,0,Math.PI/2);
+wall(roomSize/2,0,-Math.PI/2);
 
-  // Стены
-  const wallMaterial = new THREE.MeshStandardMaterial({ map: wallTexture });
+/* Дверь */
+const door=new THREE.Mesh(
+  new THREE.PlaneGeometry(1.2,2.2),
+  new THREE.MeshStandardMaterial({color:0x3a2a1a})
+);
+door.position.set(0,1.1,roomSize/2-0.01);
+door.rotation.y=Math.PI;
+scene.add(door);
 
-  const wallBack = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
-  wallBack.position.set(0, roomHeight/2, -roomSize/2); wallBack.rotation.y = 0; scene.add(wallBack);
+/* Управление */
+let yaw=0,look=false,lastX=0;
+addEventListener("mousedown",e=>{look=true;lastX=e.clientX;});
+addEventListener("mousemove",e=>{
+  if(!look)return;
+  yaw-=(e.clientX-lastX)*0.005;
+  lastX=e.clientX;
+  camera.rotation.set(0,yaw,0);
+});
+addEventListener("mouseup",()=>look=false);
 
-  const wallFront = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
-  wallFront.position.set(0, roomHeight/2, roomSize/2); wallFront.rotation.y = Math.PI; scene.add(wallFront);
+let move={f:0,s:0};
+addEventListener("keydown",e=>{
+  if(e.key==="w")move.f=1;
+  if(e.key==="s")move.f=-1;
+  if(e.key==="a")move.s=-1;
+  if(e.key==="d")move.s=1;
+});
+addEventListener("keyup",()=>move={f:0,s:0});
 
-  const wallLeft = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
-  wallLeft.position.set(-roomSize/2, roomHeight/2, 0); wallLeft.rotation.y = Math.PI/2; scene.add(wallLeft);
+/* Джойстик */
+const stick=document.getElementById("stick");
+let joy=false;
+document.getElementById("joystick").ontouchstart=()=>joy=true;
+document.getElementById("joystick").ontouchmove=e=>{
+  if(!joy)return;
+  const y=e.touches[0].clientY-innerHeight/2;
+  move.f=-y/100;
+};
+document.getElementById("joystick").ontouchend=()=>{
+  joy=false; move.f=0; stick.style.top="50%";
+};
 
-  const wallRight = new THREE.Mesh(new THREE.PlaneGeometry(roomSize, roomHeight), wallMaterial);
-  wallRight.position.set(roomSize/2, roomHeight/2, 0); wallRight.rotation.y = -Math.PI/2; scene.add(wallRight);
+/* Анимация */
+function animate(){
+  requestAnimationFrame(animate);
+  if(started){
+    const f=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
+    camera.position.add(f.multiplyScalar(-move.f*0.05));
 
-  // Куб для ориентира
-  const box = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial({ color:0xaa0000 }));
-  box.position.set(0,0.5,-3); scene.add(box);
+    const lim=roomSize/2-0.4;
+    camera.position.x=Math.max(-lim,Math.min(lim,camera.position.x));
+    camera.position.z=Math.max(-lim,Math.min(lim,camera.position.z));
 
-  // ===== ОСМОТР =====
-  let yaw=0, looking=false, lastX=0;
-  function lookStart(x){ looking=true; lastX=x; }
-  function lookMove(x){ if(!looking) return; yaw -= (x-lastX)*0.005; lastX=x; camera.rotation.set(0,yaw,0); }
-  function lookEnd(){ looking=false; }
-
-  document.addEventListener('mousedown', e=>lookStart(e.clientX));
-  document.addEventListener('mousemove', e=>lookMove(e.clientX));
-  document.addEventListener('mouseup', lookEnd);
-
-  document.addEventListener('touchstart', e=>{
-    for(let t of e.touches){ if(t.clientX>window.innerWidth/2) lookStart(t.clientX); }
-  });
-  document.addEventListener('touchmove', e=>{
-    for(let t of e.touches){ if(t.clientX>window.innerWidth/2) lookMove(t.clientX); }
-  });
-  document.addEventListener('touchend', lookEnd);
-
-  // ===== ДВИЖЕНИЕ =====
-  let move={forward:0,side:0}; let walkSpeed=0.06;
-  document.addEventListener('keydown', e=>{
-    if(e.key==='w'||e.key==='W') move.forward=1;
-    if(e.key==='s'||e.key==='S') move.forward=-1;
-    if(e.key==='a'||e.key==='A'||e.key==='ArrowLeft') move.side=-1;
-    if(e.key==='d'||e.key==='D'||e.key==='ArrowRight') move.side=1;
-  });
-  document.addEventListener('keyup', e=>{
-    if(['w','W','s','S'].includes(e.key)) move.forward=0;
-    if(['a','A','d','D','ArrowLeft','ArrowRight'].includes(e.key)) move.side=0;
-  });
-
-  // ===== ДЖОЙСТИК =====
-  const joystick = document.getElementById('joystick'); const stick = document.getElementById('stick');
-  const center = { x:50, y:window.innerHeight/2 }; const maxDist = 40; let joyActive=false;
-
-  joystick.addEventListener('touchstart', ()=>{ joyActive=true; });
-  joystick.addEventListener('touchmove', e=>{
-    if(!joyActive) return;
-    const rect = joystick.getBoundingClientRect();
-    const x = e.touches[0].clientX - rect.left;
-    const y = e.touches[0].clientY - rect.top;
-
-    let dx = x-center.x; let dy = y-center.y;
-    const dist = Math.min(Math.hypot(dx,dy), maxDist);
-    const angle = Math.atan2(dy,dx);
-    dx = Math.cos(angle)*dist; dy = Math.sin(angle)*dist;
-
-    stick.style.left = (center.x+dx-20)+'px';
-    stick.style.top  = (center.y+dy-20)+'px';
-
-    move.side = dx/maxDist;
-    move.forward = -dy/maxDist;
-  });
-  joystick.addEventListener('touchend', ()=>{
-    joyActive=false;
-    move.forward=0; move.side=0;
-    stick.style.left='50px';
-    stick.style.top=(window.innerHeight/2-20)+'px';
-  });
-
-  // ===== АНИМАЦИЯ =====
-  function animate(){
-    requestAnimationFrame(animate);
-    if(gameStarted){
-      const forward = new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
-      const right = new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
-      camera.position.add(forward.multiplyScalar(-move.forward*walkSpeed));
-      camera.position.add(right.multiplyScalar(move.side*walkSpeed));
-    }
-    renderer.render(scene,camera);
+    /* OPEN */
+    const d=camera.position.distanceTo(door.position);
+    document.getElementById("openText").style.opacity=d<1.8?1:0;
   }
-  animate();
+  renderer.render(scene,camera);
+}
+animate();
 
-  window.addEventListener('resize', ()=>{
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth,window.innerHeight);
-  });
+onresize=()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+};
 </script>
-
 </body>
 </html>
