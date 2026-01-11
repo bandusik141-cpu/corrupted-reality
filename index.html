@@ -13,7 +13,7 @@ body {
   font-family: monospace;
 }
 
-/* Общий экран */
+/* Общие экраны */
 .screen {
   position: fixed;
   inset: 0;
@@ -25,20 +25,28 @@ body {
   padding: 20px;
 }
 
-/* Главное меню */
+/* ---------- ГЛАВНОЕ МЕНЮ ---------- */
 #menu {
   display: flex;
+  background: url("https://i.postimg.cc/yNqT8dVT/download-(4).jpg") center / cover no-repeat;
 }
 
+/* Титл */
 #menu h1 {
+  color: black;
+  font-size: 36px;
+  font-weight: 900;
   margin-bottom: 40px;
-  font-size: 32px;
+  text-shadow:
+    2px 2px 0 rgba(255,255,255,0.6),
+    -2px -2px 0 rgba(255,255,255,0.6);
 }
 
+/* Кнопки */
 button {
-  background: none;
-  border: 1px solid white;
-  color: white;
+  background: rgba(255,255,255,0.85);
+  border: 2px solid black;
+  color: black;
   padding: 10px 30px;
   font-size: 18px;
   font-family: monospace;
@@ -46,11 +54,11 @@ button {
 }
 
 button:hover {
-  background: white;
-  color: black;
+  background: black;
+  color: white;
 }
 
-/* Экран игры */
+/* ---------- ИГРА ---------- */
 #game {
   background: url("room.png") center / cover no-repeat;
   justify-content: flex-end;
@@ -123,9 +131,7 @@ function nextText() {
   if (index < day1.length) {
     showText();
   } else {
-    // позже тут будет переход к дню 2
-    document.getElementById("text").textContent =
-      "День закончился.";
+    document.getElementById("text").textContent = "День закончился.";
     document.getElementById("next").style.display = "none";
   }
 }
